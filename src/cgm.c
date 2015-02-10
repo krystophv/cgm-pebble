@@ -1856,9 +1856,57 @@ static void load_cgmtime() {
       }
 
       // display cgm_timeago as now to 5m always, no matter what the difference is by using an offset
+      current_cgm_timeago = abs(cgm_time_now - current_cgm_time);
+
       if (stored_cgm_time == current_cgm_time) {
           // stored time is same as incoming time, so display timeago
           current_cgm_timeago = (abs((abs(cgm_time_now - current_cgm_time)) - cgm_time_offset));
+      }
+
+      //APP_LOG(APP_LOG_LEVEL_DEBUG, "LOAD CGMTIME, CURRENT CGM TIME: %lu", current_cgm_time);
+      //APP_LOG(APP_LOG_LEVEL_DEBUG, "LOAD CGMTIME, TIME NOW IN CGM: %lu", cgm_time_now);
+
+
+
+      //APP_LOG(APP_LOG_LEVEL_DEBUG, "LOAD CGMTIME, CURRENT CGM TIMEAGO: %lu", current_cgm_timeago);
+
+      //APP_LOG(APP_LOG_LEVEL_DEBUG, "LOAD CGMTIME, GM TIME AGO LABEL IN: %s", cgm_label_buffer);
+
+      // set next poll for data to 5 minutes and 30 seconds after the current data or,
+      // if the time to next poll is less than 30 seconds, wait one minute
+      next_tick = current_cgm_time + 60 * 6 + 30;
+      time_till_next_tick = next_tick - cgm_time_now;
+      if (time_till_next_tick < 30) {
+        time_till_next_tick = 60;
+      }
+
+      if (timer_cgm != NULL) {
+        app_timer_cancel(timer_cgm);
+        timer_cgm = NULL;
+      }
+      timer_cgm = app_timer_register((time_till_next_tick * MS_IN_A_SECOND), timer_callback_cgm, NULL);
+
+      if (current_cgm_timeago < MINUTEAGO) {
+        cgm_timeago_diff = 0;
+        strncpy (formatted_cgm_timeago, "now", TIMEAGO_BUFFER_SIZE);
+      }
+      else if (current_cgm_timeago < HOURAGO) {
+        cgm_timeago_diff = (current_cgm_timeago / MINUTEAGO);
+        snprintf(formatted_cgm_timeago, TIMEAGO_BUFFER_SIZE, "%i", cgm_timeago_diff);
+        strncpy(cgm_label_buffer, "m", LABEL_BUFFER_SIZE);
+        strcat(formatted_cgm_timeago, cgm_label_buffer);
+      }
+      else if (current_cgm_timeago < DAYAGO) {
+        cgm_timeago_diff = (current_cgm_timeago / HOURAGO);
+        snprintf(formatted_cgm_timeago, TIMEAGO_BUFFER_SIZE, "%i", cgm_timeago_diff);
+        strncpy(cgm_label_buffer, "h", LABEL_BUFFER_SIZE);
+        strcat(formatted_cgm_timeago, cgm_label_buffer);
+      }
+      else if (current_cgm_timeago < WEEKAGO) {
+        cgm_timeago_diff = (current_cgm_timeago / DAYAGO);
+        snprintf(formatted_cgm_timeago, TIMEAGO_BUFFER_SIZE, "%i", cgm_timeago_diff);
+        strncpy(cgm_label_buffer, "d", LABEL_BUFFER_SIZE);
+        strcat(formatted_cgm_timeago, cgm_label_buffer);
       }
       else {
         // got new cgm time, set loading flags and get offset
