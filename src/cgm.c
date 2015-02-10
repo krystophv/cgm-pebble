@@ -740,6 +740,7 @@ static void alert_handler_cgm(uint8_t alertValue) {
 	
 } // end alert_handler_cgm
 
+void timer_callback_cgm(void *data);
 void BT_timer_callback(void *data);
 
 void handle_bluetooth_cgm(bool bt_connected) {
@@ -2015,6 +2016,8 @@ static void load_cgmtime() {
 	// VARIABLES
 	uint32_t current_cgm_timeago = 0;
 	int cgm_timeago_diff = 0;
+	int time_till_next_tick = 0;
+	int next_tick = 0;
     
 	// CODE START
 	
@@ -2043,6 +2046,20 @@ static void load_cgmtime() {
       //APP_LOG(APP_LOG_LEVEL_DEBUG, "LOAD CGMTIME, CURRENT CGM TIMEAGO: %lu", current_cgm_timeago);
       
       //APP_LOG(APP_LOG_LEVEL_DEBUG, "LOAD CGMTIME, GM TIME AGO LABEL IN: %s", cgm_label_buffer);
+      
+      // set next poll for data to 5 minutes and 30 seconds after the current data or,
+      // if the time to next poll is less than 30 seconds, wait one minute
+      next_tick = current_cgm_time + 60 * 5 + 30;
+      time_till_next_tick = next_tick - cgm_time_now;
+      if (time_till_next_tick < 30) {
+        time_till_next_tick = 60;
+      }
+
+      if (timer_cgm != NULL) {
+        app_timer_cancel(timer_cgm);
+        timer_cgm = NULL;
+      }
+      timer_cgm = app_timer_register((time_till_next_tick * MS_IN_A_SECOND), timer_callback_cgm, NULL);
       
       if (current_cgm_timeago < MINUTEAGO) {
         cgm_timeago_diff = 0;
