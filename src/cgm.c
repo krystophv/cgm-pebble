@@ -2609,6 +2609,71 @@ void handle_minute_tick_cgm(struct tm* tick_time_cgm, TimeUnits units_changed_cg
     
   } 
   
+    // update the time_ago layer here
+
+    // VARIABLES
+    uint32_t current_cgm_timeago = 0;
+    int cgm_timeago_diff = 0;
+
+    // CODE START
+
+    // initialize label buffer
+    strncpy(cgm_label_buffer, "", LABEL_BUFFER_SIZE);
+
+
+    if (current_cgm_time == 0) {
+        // Init code or error code; set text layer & icon to empty value
+        text_layer_set_text(cgmtime_layer, "");
+        create_update_bitmap(&cgmicon_bitmap, cgmicon_layer, TIMEAGO_ICONS[NONE_TIMEAGO_ICON_INDX]);
+    } else {
+        // set rcvr on icon
+        create_update_bitmap(&cgmicon_bitmap, cgmicon_layer, TIMEAGO_ICONS[RCVRON_ICON_INDX]);
+
+        cgm_time_now = time(NULL);
+
+        current_cgm_timeago = abs(cgm_time_now - current_cgm_time);
+
+        if (current_cgm_timeago < MINUTEAGO) {
+            cgm_timeago_diff = 0;
+            strncpy (formatted_cgm_timeago, "now", TIMEAGO_BUFFER_SIZE);
+        } else if (current_cgm_timeago < HOURAGO) {
+            cgm_timeago_diff = (current_cgm_timeago / MINUTEAGO);
+            snprintf(formatted_cgm_timeago, TIMEAGO_BUFFER_SIZE, "%i", cgm_timeago_diff);
+            strncpy(cgm_label_buffer, "m", LABEL_BUFFER_SIZE);
+            strcat(formatted_cgm_timeago, cgm_label_buffer);
+        } else if (current_cgm_timeago < DAYAGO) {
+            cgm_timeago_diff = (current_cgm_timeago / HOURAGO);
+            snprintf(formatted_cgm_timeago, TIMEAGO_BUFFER_SIZE, "%i", cgm_timeago_diff);
+            strncpy(cgm_label_buffer, "h", LABEL_BUFFER_SIZE);
+            strcat(formatted_cgm_timeago, cgm_label_buffer);
+        } else if (current_cgm_timeago < WEEKAGO) {
+            cgm_timeago_diff = (current_cgm_timeago / DAYAGO);
+            snprintf(formatted_cgm_timeago, TIMEAGO_BUFFER_SIZE, "%i", cgm_timeago_diff);
+            strncpy(cgm_label_buffer, "d", LABEL_BUFFER_SIZE);
+            strcat(formatted_cgm_timeago, cgm_label_buffer);
+        } else {
+            strncpy (formatted_cgm_timeago, "ERR", TIMEAGO_BUFFER_SIZE);
+            create_update_bitmap(&cgmicon_bitmap, cgmicon_layer, TIMEAGO_ICONS[NONE_TIMEAGO_ICON_INDX]);
+        }
+
+        text_layer_set_text(cgmtime_layer, formatted_cgm_timeago);
+
+        // check to see if we need to show receiver off icon
+        if ( (cgm_timeago_diff >= CGMOUT_WAIT_MIN) || ( (strcmp(cgm_label_buffer, "") != 0) && (strcmp(cgm_label_buffer, "m") != 0) ) ) {
+            // set receiver off icon
+            create_update_bitmap(&cgmicon_bitmap, cgmicon_layer, TIMEAGO_ICONS[RCVROFF_ICON_INDX]);
+
+            // Vibrate if we need to
+            if ((!CGMOffAlert) && (!PhoneOffAlert)) {
+                alert_handler_cgm(CGMOUT_VIBE);
+                CGMOffAlert = true;
+            }
+        } else {
+            // reset CGMOffAlert
+            CGMOffAlert = false;
+        }
+    } // else init code
+
 } // end handle_minute_tick_cgm
 
 void window_load_cgm(Window *window_cgm) {
