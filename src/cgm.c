@@ -2627,7 +2627,7 @@ void handle_minute_tick_cgm(struct tm* tick_time_cgm, TimeUnits units_changed_cg
         // Init code or error code; set text layer & icon to empty value
         text_layer_set_text(cgmtime_layer, "");
 
-        create_update_bitmap(&cgmicon_bitmap, cgmicon_layer, TIMEAGO_ICONS[NONE_TIMEAGO_ICON_INDX]);
+        create_update_bitmap(&cgmicon_bitmap, cgmicon_layer, TIMEAGO_ICONS[RCVRNONE_ICON_INDX]);
     } else {
         // set rcvr on icon
         create_update_bitmap(&cgmicon_bitmap, cgmicon_layer, TIMEAGO_ICONS[RCVRON_ICON_INDX]);
@@ -2657,7 +2657,7 @@ void handle_minute_tick_cgm(struct tm* tick_time_cgm, TimeUnits units_changed_cg
         } else {
             strncpy (formatted_cgm_timeago, "ERR", TIMEAGO_BUFFER_SIZE);
 
-            create_update_bitmap(&cgmicon_bitmap, cgmicon_layer, TIMEAGO_ICONS[NONE_TIMEAGO_ICON_INDX]);
+            create_update_bitmap(&cgmicon_bitmap, cgmicon_layer, TIMEAGO_ICONS[RCVRNONE_ICON_INDX]);
         }
 
         text_layer_set_text(cgmtime_layer, formatted_cgm_timeago);
