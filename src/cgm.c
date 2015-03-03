@@ -805,15 +805,16 @@ static void draw_date_from_app() {
   // format current date from app
   if (strcmp(time_watch_text, "00:00") == 0) {
       //APP_LOG(APP_LOG_LEVEL_INFO, "TimeFormat: %d", timeformat);
-      if (timeformat == 0){
-        draw_return = strftime(time_watch_text, TIME_TEXTBUFF_SIZE, "%l:%M", current_d_app);
-      } else {
-        draw_return = strftime(time_watch_text, TIME_TEXTBUFF_SIZE, "%H:%M", current_d_app);
-      }
+      // if (timeformat == 0){
+      //   draw_return = strftime(time_watch_text, TIME_TEXTBUFF_SIZE, "%l:%M", current_d_app);
+      // } else {
+      //   draw_return = strftime(time_watch_text, TIME_TEXTBUFF_SIZE, "%H:%M", current_d_app);
+      // }
+    clock_copy_time_string(time_watch_text, TIME_TEXTBUFF_SIZE);
 
-	if (draw_return != 0) {
+	//if (draw_return != 0) {
       text_layer_set_text(time_watch_layer, time_watch_text);
-	}
+	//}
   }
 
   draw_return = strftime(date_app_text, DATE_TEXTBUFF_SIZE, "%a %d", current_d_app);
@@ -2417,14 +2418,18 @@ void handle_minute_tick_cgm(struct tm* tick_time_cgm, TimeUnits units_changed_cg
 
   if (units_changed_cgm & MINUTE_UNIT) {
     //APP_LOG(APP_LOG_LEVEL_INFO, "TICK TIME MINUTE CODE");
+    /*
     if (timeformat == 0){
       tick_return_cgm = strftime(time_watch_text, TIME_TEXTBUFF_SIZE, "%l:%M", tick_time_cgm);
     } else {
       tick_return_cgm = strftime(time_watch_text, TIME_TEXTBUFF_SIZE, "%H:%M", tick_time_cgm);
     }
-	if (tick_return_cgm != 0) {
+    */
+    clock_copy_time_string(time_watch_text, TIME_TEXTBUFF_SIZE);
+	//if (tick_return_cgm != 0) {
       text_layer_set_text(time_watch_layer, time_watch_text);
-	}
+
+	//}
 
 	//APP_LOG(APP_LOG_LEVEL_DEBUG, "lastAlertTime IN:  %i", lastAlertTime);
 	// increment BG snooze
