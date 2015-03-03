@@ -703,6 +703,8 @@ void handle_bluetooth_cgm(bool bt_connected) {
   // bluetooth is out
   {
 
+    bluetooth_connected_cgm = false;
+
 	// Check BluetoothAlert for extended Bluetooth outage; if so, do nothing
 	if (BluetoothAlert == 111) {
       //Already vibrated and set message; out
@@ -710,19 +712,21 @@ void handle_bluetooth_cgm(bool bt_connected) {
 	}
 
 	// Check to see if the BT_timer needs to be set; if BT_timer is not null we're still waiting
-	if (BT_timer == NULL) {
+	//if (BT_timer == NULL) {
 	  // check to see if timer has popped
-	  if (BT_timer_pop == 100) {
+
+	  //if (!BT_timer_pop) {
 	    //set timer
-	    BT_timer = app_timer_register((BT_ALERT_WAIT_SECS*MS_IN_A_SECOND), BT_timer_callback, NULL);
+	    //BT_timer = app_timer_register((BT_ALERT_WAIT_SECS*MS_IN_A_SECOND), BT_timer_callback, NULL);
 		// have set timer; next time we come through we will see that the timer has popped
-		return;
-	  }
-	}
-	else {
+		//return;
+	  //}
+	//}
+	//else {
 	  // BT_timer is not null and we're still waiting
-	  return;
-    }
+
+	  //return;
+    //}
 
 	// timer has popped
 	// Vibrate; BluetoothAlert takes over until Bluetooth connection comes back on
@@ -731,7 +735,8 @@ void handle_bluetooth_cgm(bool bt_connected) {
     BluetoothAlert = 111;
 
 	// Reset timer pop
-	BT_timer_pop = 100;
+
+	//BT_timer_pop = false;
 
 	//APP_LOG(APP_LOG_LEVEL_INFO, "NO BLUETOOTH");
     if (TurnOff_NOBLUETOOTH_Msg == 100) {
@@ -750,21 +755,17 @@ void handle_bluetooth_cgm(bool bt_connected) {
   else {
 	// Bluetooth is on, reset BluetoothAlert
     //APP_LOG(APP_LOG_LEVEL_INFO, "HANDLE BT: BLUETOOTH ON");
-    //if (BluetoothAlert == 111) {
-      //ClearedOutage = 111;
-      //APP_LOG(APP_LOG_LEVEL_DEBUG, "BT HANDLER, SET CLEARED OUTAGE: %i ", ClearedOutage);
-    //}
-    BluetoothAlert = 100;
-    ClearedBTOutage = 111;
-    if (BT_timer == NULL) {
+    bluetooth_connected_cgm  = true;
+	BluetoothAlert = false;
+    //if (BT_timer == NULL) {
       // no timer is set, so need to reset timer pop
-      BT_timer_pop = 100;
-    }
+    //  BT_timer_pop = false;
+    //}
   }
 
   //APP_LOG(APP_LOG_LEVEL_INFO, "BluetoothAlert: %i", BluetoothAlert);
 } // end handle_bluetooth_cgm
-
+/*
 void BT_timer_callback(void *data) {
     //APP_LOG(APP_LOG_LEVEL_INFO, "BT TIMER CALLBACK: ENTER CODE");
 
@@ -776,10 +777,11 @@ void BT_timer_callback(void *data) {
 
 	// check bluetooth and call handler
 	bluetooth_connected_cgm = bluetooth_connection_service_peek();
-	handle_bluetooth_cgm(bluetooth_connected_cgm);
+
+	//handle_bluetooth_cgm(bluetooth_connected_cgm);
 
 } // end BT_timer_callback
-
+*/
 void handle_watch_battery_cgm(BatteryChargeState watch_charge_state) {
 
   static char watch_battery_text[] = "Wch 100%";
@@ -835,7 +837,8 @@ void sync_error_callback_cgm(DictionaryResult appsync_dict_error, AppMessageResu
 
   // CODE START
 
-  bluetooth_connected_syncerror = bluetooth_connection_service_peek();
+
+  bluetooth_connected_syncerror = bluetooth_connected_cgm ; //bluetooth_connection_service_peek();
   if (!bluetooth_connected_syncerror) {
     // bluetooth is out, BT message already set; return out
     return;
@@ -884,8 +887,9 @@ void sync_error_callback_cgm(DictionaryResult appsync_dict_error, AppMessageResu
   }
 
   // check bluetooth again
-  bluetooth_connected_syncerror = bluetooth_connection_service_peek();
-if (bluetooth_connected_syncerror == false) {
+
+  bluetooth_connected_syncerror = bluetooth_connected_cgm ;//bluetooth_connection_service_peek();
+  if (!bluetooth_connected_syncerror) {
     // bluetooth is out, BT message already set; return out
     return;
   }
@@ -917,22 +921,129 @@ void inbox_dropped_handler_cgm(AppMessageResult appmsg_indrop_error, void *conte
   // have never seen handler get called, think because AppSync is always used
   // just set log now to avoid crash, if see log then can go back to old handler
 
-	// APPMSG IN DROP debug logs
-	//APP_LOG(APP_LOG_LEVEL_INFO, "APPMSG IN DROP ERROR");
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "APPMSG IN DROP ERR, CODE: %i RES: %s",
-          appmsg_indrop_error, translate_app_error(appmsg_indrop_error));
+
+	bluetooth_connected_inboxdrop = bluetooth_connected_cgm ;//bluetooth_connection_service_peek();
+
+  if (!bluetooth_connected_inboxdrop) {
+    // bluetooth is out, BT message already set; return out
+    return;
+  }
+
+  // increment app sync retries counter
+  appsyncandmsg_retries_counter++;
+
+  // if hit max counter, skip resend and flag user
+  if (appsyncandmsg_retries_counter < APPSYNCANDMSG_RETRIES_MAX) {
+
+	  // APPMSG IN DROP debug logs
+	  APP_LOG(APP_LOG_LEVEL_INFO, "APPMSG IN DROP ERROR");
+	  APP_LOG(APP_LOG_LEVEL_DEBUG, "APPMSG IN DROP ERR CODE: %i RES: %s", appmsg_indrop_error, translate_app_error(appmsg_indrop_error));
+	  APP_LOG(APP_LOG_LEVEL_DEBUG, "appsyncandmsg_retries_counter: %i", appsyncandmsg_retries_counter);
+
+    // try to resend the message; open app message outbox
+    appmsg_indrop_openerr = app_message_outbox_begin(&iter);
+    if (appmsg_indrop_openerr == APP_MSG_OK) {
+      // could open app message outbox; send message
+      appmsg_indrop_senderr = app_message_outbox_send();
+      if (appmsg_indrop_senderr == APP_MSG_OK ) {
+        // everything OK, reset AppSyncErrAlert so no vibrate
+        AppMsgInDropAlert = false;
+        // sent message OK; return
+	      return;
+      } // if appmsg_indrop_senderr
+    } // if appmsg_indrop_openerr
+  } // if appsyncandmsg_retries_counter
+
+  // check bluetooth again
+  bluetooth_connected_inboxdrop = bluetooth_connected_cgm ;//bluetooth_connection_service_peek();
+
+  if (!bluetooth_connected_inboxdrop) {
+    // bluetooth is out, BT message already set; return out
+    return;
+  }
+
+  // flag error
+  if (appsyncandmsg_retries_counter > APPSYNCANDMSG_RETRIES_MAX) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "APPMSG IN DROP TOO MANY MESSAGES ERROR");
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "APPMSG IN DROP ERR CODE ERR CODE: %i RES: %s", appmsg_indrop_error, translate_app_error(appmsg_indrop_error));
+	  APP_LOG(APP_LOG_LEVEL_DEBUG, "appsyncandmsg_retries_counter: %i", appsyncandmsg_retries_counter);
+  }
+  else {
+    APP_LOG(APP_LOG_LEVEL_INFO, "APPMSG IN DROP RESEND ERROR");
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "APPMSG IN DROP RESEND MSG OPEN ERR CODE: %i RES: %s", appmsg_indrop_openerr, translate_app_error(appmsg_indrop_openerr));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "APPMSG IN DROP RESEND MSG SEND ERR CODE: %i RES: %s", appmsg_indrop_senderr, translate_app_error(appmsg_indrop_senderr));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "AppMsgInDropAlert: %i  appsyncandmsg_retries_counter: %i", AppMsgInDropAlert, appsyncandmsg_retries_counter);
+    return;
+  }
 
 } // end inbox_dropped_handler_cgm
 
 void outbox_failed_handler_cgm(DictionaryIterator *failed, AppMessageResult appmsg_outfail_error, void *context) {
 	// outgoing appmessage send failed to deliver to Pebble
-  // have never seen handler get called, think because AppSync is always used
-  // just set log now to avoid crash, if see log then can go back to old handler
 
-  // APPMSG OUT FAIL debug logs
-  //APP_LOG(APP_LOG_LEVEL_INFO, "APPMSG OUT FAIL ERROR");
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "APPMSG OUT FAIL ERR, CODE: %i RES: %s",
-          appmsg_outfail_error, translate_app_error(appmsg_outfail_error));
+
+	// VARIABLES
+	DictionaryIterator *iter = NULL;
+	AppMessageResult appmsg_outfail_openerr = APP_MSG_OK;
+	AppMessageResult appmsg_outfail_senderr = APP_MSG_OK;
+
+  bool bluetooth_connected_outboxfail = true;
+
+	// CODE START
+
+	bluetooth_connected_outboxfail = bluetooth_connected_cgm ;//bluetooth_connection_service_peek();
+
+  if (!bluetooth_connected_outboxfail) {
+    // bluetooth is out, BT message already set; return out
+    return;
+  }
+
+  // increment app sync and msg retries counter
+  appsyncandmsg_retries_counter++;
+
+  // if hit max counter, skip resend and flag user
+  if (appsyncandmsg_retries_counter < APPSYNCANDMSG_RETRIES_MAX) {
+
+	  // APPMSG OUT FAIL debug logs
+	  APP_LOG(APP_LOG_LEVEL_INFO, "APPMSG OUT FAIL ERROR");
+	  APP_LOG(APP_LOG_LEVEL_DEBUG, "APPMSG OUT FAIL ERR CODE: %i RES: %s", appmsg_outfail_error, translate_app_error(appmsg_outfail_error));
+	  APP_LOG(APP_LOG_LEVEL_DEBUG, "appsyncandmsg_retries_counter: %i", appsyncandmsg_retries_counter);
+
+    // try to resend the message; open app message outbox
+    appmsg_outfail_openerr = app_message_outbox_begin(&iter);
+    if (appmsg_outfail_openerr == APP_MSG_OK) {
+      // could open app message outbox; send message
+      appmsg_outfail_senderr = app_message_outbox_send();
+      if (appmsg_outfail_senderr == APP_MSG_OK ) {
+        // everything OK, reset AppSyncErrAlert so no vibrate
+        AppMsgOutFailAlert = false;
+        // sent message OK; return
+	      return;
+      } // if appmsg_outfail_senderr
+    } // if appmsg_outfail_openerr
+  } // if appsyncandmsg_retries_counter
+
+  // check bluetooth again
+  bluetooth_connected_outboxfail = bluetooth_connected_cgm ;//bluetooth_connection_service_peek();
+
+  if (!bluetooth_connected_outboxfail) {
+    // bluetooth is out, BT message already set; return out
+    return;
+  }
+
+  // flag error
+  if (appsyncandmsg_retries_counter > APPSYNCANDMSG_RETRIES_MAX) {
+	  APP_LOG(APP_LOG_LEVEL_INFO, "APPMSG OUT FAIL ERROR");
+	  APP_LOG(APP_LOG_LEVEL_DEBUG, "APPMSG OUT FAIL ERR CODE: %i RES: %s", appmsg_outfail_error, translate_app_error(appmsg_outfail_error));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "appsyncandmsg_retries_counter: %i", appsyncandmsg_retries_counter);
+  }
+  else {
+    APP_LOG(APP_LOG_LEVEL_INFO, "APPMSG OUT FAIL RESEND ERROR");
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "APPMSG OUT FAIL RESEND MSG OPEN ERR CODE: %i RES: %s", appmsg_outfail_openerr, translate_app_error(appmsg_outfail_openerr));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "APPMSG OUT FAIL RESEND MSG SEND ERR CODE: %i RES: %s", appmsg_outfail_senderr, translate_app_error(appmsg_outfail_senderr));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "AppMsgOutFailAlert: %i  appsyncandmsg_retries_counter: %i", AppMsgOutFailAlert, appsyncandmsg_retries_counter);
+    return;
+  }
 
 } // end outbox_failed_handler_cgm
 
@@ -1034,7 +1145,8 @@ static void load_icon() {
       else {
 	    // check for special cases and set icon accordingly
 		// check bluetooth
-	    bluetooth_connected_cgm = bluetooth_connection_service_peek();
+
+	    //bluetooth_connected_cgm = bluetooth_connected_cgm ;//bluetooth_connection_service_peek();
 
 	    // check to see if we are in the loading screen
 	    if (!bluetooth_connected_cgm) {
@@ -1445,7 +1557,8 @@ static void load_bg() {
       lastAlertTime = 0;
 
       // check bluetooth
-      bluetooth_connected_cgm = bluetooth_connection_service_peek();
+
+      //bluetooth_connected_cgm = bluetooth_connected_cgm ;//bluetooth_connection_service_peek();
 
       if (!bluetooth_connected_cgm) {
 	    // Bluetooth is out; set BT message
@@ -1911,9 +2024,10 @@ static void load_bg_delta() {
 	// CODE START
 
 	// check bluetooth connection
-	bluetooth_connected_cgm = bluetooth_connection_service_peek();
 
-	if ((!bluetooth_connected_cgm) || (BluetoothAlert == 111)) {
+	//bluetooth_connected_cgm = bluetooth_connected_cgm ;//bluetooth_connection_service_peek();
+
+	if (!bluetooth_connected_cgm) {
 	  // Bluetooth is out; BT message already set, so return
 	  return;
 	}
@@ -2747,6 +2861,9 @@ void window_unload_cgm(Window *window_cgm) {
 
 static void init_cgm(void) {
   //APP_LOG(APP_LOG_LEVEL_INFO, "INIT CODE IN");
+
+  // set initial BT connection bool
+  bluetooth_connected_cgm  = bluetooth_connection_service_peek();
 
   // subscribe to the tick timer service
   tick_timer_service_subscribe(MINUTE_UNIT, &handle_minute_tick_cgm);
