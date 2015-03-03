@@ -768,6 +768,7 @@ void handle_bluetooth_cgm(bool bt_connected) {
       //APP_LOG(APP_LOG_LEVEL_DEBUG, "BT HANDLER, SET CLEARED OUTAGE: %i ", ClearedOutage);
     //}
     //BluetoothAlert = 100;
+    load_bg_delta();
     //if (BT_timer == NULL) {
       // no timer is set, so need to reset timer pop
     //  BT_timer_pop = 100;
