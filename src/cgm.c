@@ -691,6 +691,7 @@ void handle_bluetooth_cgm(bool bt_connected) {
   
   if (bt_connected == false)
   {
+    bluetooth_connected_cgm = false;
 	
 	// Check BluetoothAlert for extended Bluetooth outage; if so, do nothing
 	if (BluetoothAlert == 111) {
@@ -699,19 +700,19 @@ void handle_bluetooth_cgm(bool bt_connected) {
 	}
 	
 	// Check to see if the BT_timer needs to be set; if BT_timer is not null we're still waiting
-	if (BT_timer == NULL) {
+	//if (BT_timer == NULL) {
 	  // check to see if timer has popped
-	  if (BT_timer_pop == 100) {
+	  //if (BT_timer_pop == 100) {
 	    //set timer
-	    BT_timer = app_timer_register((BT_ALERT_WAIT_SECS*MS_IN_A_SECOND), BT_timer_callback, NULL);
+	    //BT_timer = app_timer_register((BT_ALERT_WAIT_SECS*MS_IN_A_SECOND), BT_timer_callback, NULL);
 		// have set timer; next time we come through we will see that the timer has popped
-		return;
-	  }
-	}
-	else {
+		//return;
+	  //}
+	//}
+	//else {
 	  // BT_timer is not null and we're still waiting
-	  return;
-    }
+	  //return;
+    //}
 	
 	// timer has popped
 	// Vibrate; BluetoothAlert takes over until Bluetooth connection comes back on
@@ -720,7 +721,7 @@ void handle_bluetooth_cgm(bool bt_connected) {
     BluetoothAlert = 111;
 	
 	// Reset timer pop
-	BT_timer_pop = 100;
+	//BT_timer_pop = 100;
 	
 	//APP_LOG(APP_LOG_LEVEL_INFO, "NO BLUETOOTH");
     if (TurnOff_NOBLUETOOTH_Msg == 100) {
@@ -735,24 +736,25 @@ void handle_bluetooth_cgm(bool bt_connected) {
     create_update_bitmap(&cgmicon_bitmap,cgmicon_layer,TIMEAGO_ICONS[RCVRNONE_ICON_INDX]);
 	
   }
-    
   else {
 	// Bluetooth is on, reset BluetoothAlert
     //APP_LOG(APP_LOG_LEVEL_INFO, "HANDLE BT: BLUETOOTH ON");
-    if (BluetoothAlert == 111) { 
-      ClearedOutage = 111; 
+    bluetooth_connected_cgm  = true;
+  BluetoothAlert = false;
+    //if (BluetoothAlert == 111) { 
+    //  ClearedOutage = 111; 
       //APP_LOG(APP_LOG_LEVEL_DEBUG, "BT HANDLER, SET CLEARED OUTAGE: %i ", ClearedOutage);
-    } 
-    BluetoothAlert = 100;
-    if (BT_timer == NULL) {
+    //} 
+    //BluetoothAlert = 100;
+    //if (BT_timer == NULL) {
       // no timer is set, so need to reset timer pop
-      BT_timer_pop = 100;
-    }
+    //  BT_timer_pop = 100;
+    //}
   }
   
   //APP_LOG(APP_LOG_LEVEL_INFO, "BluetoothAlert: %i", BluetoothAlert);
 } // end handle_bluetooth_cgm
-
+/*
 void BT_timer_callback(void *data) {
     //APP_LOG(APP_LOG_LEVEL_INFO, "BT TIMER CALLBACK: ENTER CODE");
 	
@@ -764,10 +766,10 @@ void BT_timer_callback(void *data) {
 	
 	// check bluetooth and call handler
 	bluetooth_connected_cgm = bluetooth_connection_service_peek();
-	handle_bluetooth_cgm(bluetooth_connected_cgm);
+	//handle_bluetooth_cgm(bluetooth_connected_cgm);
 	
 } // end BT_timer_callback
-
+*/
 void handle_watch_battery_cgm(BatteryChargeState watch_charge_state) {
   
   static char watch_battery_text[] = "Wch 100%";
@@ -823,7 +825,7 @@ void sync_error_callback_cgm(DictionaryResult appsync_dict_error, AppMessageResu
   
   // CODE START
   
-  bluetooth_connected_syncerror = bluetooth_connection_service_peek();
+  bluetooth_connected_syncerror = bluetooth_connected_cgm ; //bluetooth_connection_service_peek();
   if (!bluetooth_connected_syncerror) {
     // bluetooth is out, BT message already set; return out
     return;
@@ -872,8 +874,9 @@ void sync_error_callback_cgm(DictionaryResult appsync_dict_error, AppMessageResu
   } 
  
   // check bluetooth again
-  bluetooth_connected_syncerror = bluetooth_connection_service_peek();   
-if (bluetooth_connected_syncerror == false) {
+
+  bluetooth_connected_syncerror = bluetooth_connected_cgm ;//bluetooth_connection_service_peek();   
+  if (!bluetooth_connected_syncerror) {
     // bluetooth is out, BT message already set; return out
     return;
   }
@@ -922,6 +925,7 @@ void outbox_failed_handler_cgm(DictionaryIterator *failed, AppMessageResult appm
   APP_LOG(APP_LOG_LEVEL_DEBUG, "APPMSG OUT FAIL ERR, CODE: %i RES: %s", 
           appmsg_outfail_error, translate_app_error(appmsg_outfail_error));
  
+
 } // end outbox_failed_handler_cgm
 
 static void load_icon() {
@@ -1022,7 +1026,7 @@ static void load_icon() {
       else {
 	    // check for special cases and set icon accordingly
 		// check bluetooth
-	    bluetooth_connected_cgm = bluetooth_connection_service_peek();
+	    //bluetooth_connected_cgm = bluetooth_connected_cgm ;//bluetooth_connection_service_peek();
         
 	    // check to see if we are in the loading screen  
 	    if (!bluetooth_connected_cgm) {
@@ -1433,7 +1437,7 @@ static void load_bg() {
       lastAlertTime = 0;
       
       // check bluetooth
-      bluetooth_connected_cgm = bluetooth_connection_service_peek();
+      //bluetooth_connected_cgm = bluetooth_connected_cgm ;//bluetooth_connection_service_peek();
       
       if (!bluetooth_connected_cgm) {
 	    // Bluetooth is out; set BT message
@@ -1890,7 +1894,7 @@ static void load_bg_delta() {
 	// CODE START
 	
 	// check bluetooth connection
-	bluetooth_connected_cgm = bluetooth_connection_service_peek();
+	//bluetooth_connected_cgm = bluetooth_connected_cgm ;//bluetooth_connection_service_peek();
     
 	if (!bluetooth_connected_cgm) {
 	  // Bluetooth is out; BT message already set, so return
@@ -2672,6 +2676,9 @@ void window_unload_cgm(Window *window_cgm) {
 
 static void init_cgm(void) {
   //APP_LOG(APP_LOG_LEVEL_INFO, "INIT CODE IN");
+
+  // set initial BT connection bool
+  bluetooth_connected_cgm  = bluetooth_connection_service_peek();
 
   // subscribe to the tick timer service
   tick_timer_service_subscribe(MINUTE_UNIT, &handle_minute_tick_cgm);
