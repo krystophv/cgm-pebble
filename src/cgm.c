@@ -1830,11 +1830,15 @@ static void load_cgmtime() {
         time_till_next_tick = 60;
       }
 
+      // if timer already exists, just reschedule it
       if (timer_cgm != NULL) {
-        app_timer_cancel(timer_cgm);
-        timer_cgm = NULL;
+        app_timer_reschedule(timer_cgm, time_till_next_tick * MS_IN_A_SECOND);
       }
-      timer_cgm = app_timer_register((time_till_next_tick * MS_IN_A_SECOND), timer_callback_cgm, NULL);
+      else {
+        timer_cgm = app_timer_register((time_till_next_tick * MS_IN_A_SECOND), timer_callback_cgm, NULL);
+      }
+
+
 
       if (current_cgm_timeago < MINUTEAGO) {
         cgm_timeago_diff = 0;
@@ -2557,7 +2561,7 @@ void handle_minute_tick_cgm(struct tm* tick_time_cgm, TimeUnits units_changed_cg
 
   // check watch battery
 
-  handle_watch_battery_cgm(battery_state_service_peek());
+  //handle_watch_battery_cgm(battery_state_service_peek());
 
   }
 
