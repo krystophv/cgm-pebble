@@ -686,6 +686,12 @@ static void alert_handler_cgm(uint8_t alertValue) {
 void timer_callback_cgm(void *data);
 void BT_timer_callback(void *data);
 
+// forward declarations for animation code
+static void load_bg_delta();
+static void load_cgmtime();
+static void load_apptime();
+static void load_rig_battlevel();
+
 void handle_bluetooth_cgm(bool bt_connected) {
   //APP_LOG(APP_LOG_LEVEL_INFO, "HANDLE BT: ENTER CODE");
   
@@ -746,6 +752,7 @@ void handle_bluetooth_cgm(bool bt_connected) {
       //APP_LOG(APP_LOG_LEVEL_DEBUG, "BT HANDLER, SET CLEARED OUTAGE: %i ", ClearedOutage);
     //} 
     //BluetoothAlert = 100;
+    load_bg_delta();
     //if (BT_timer == NULL) {
       // no timer is set, so need to reset timer pop
     //  BT_timer_pop = 100;
@@ -1046,11 +1053,7 @@ static void load_icon() {
 	
 } // end load_icon
 
-// forward declarations for animation code
-static void load_bg_delta();
-static void load_cgmtime();
-static void load_apptime();
-static void load_rig_battlevel();
+
 
 // ANIMATION CODE
 
