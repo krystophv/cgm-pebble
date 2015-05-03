@@ -38,7 +38,7 @@ GBitmap *cgmicon_bitmap = NULL;
 GBitmap *specialvalue_bitmap = NULL;
 GBitmap *perfectbg_bitmap = NULL;
 
-InverterLayer *inv_rig_battlevel_layer = NULL;
+//InverterLayer *inv_rig_battlevel_layer = NULL;
 
 PropertyAnimation *perfectbg_animation = NULL;
 PropertyAnimation *happymsg_animation = NULL;
@@ -584,6 +584,7 @@ static void destroy_null_TextLayer(TextLayer **txt_layer) {
 //APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL TEXT LAYER: EXIT CODE");
 } // end destroy_null_TextLayer
 
+/*
 static void destroy_null_InverterLayer(InverterLayer **inv_layer) {
 	//APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL INVERTER LAYER: ENTER CODE");
 
@@ -597,6 +598,7 @@ static void destroy_null_InverterLayer(InverterLayer **inv_layer) {
 	}
 //APP_LOG(APP_LOG_LEVEL_INFO, "DESTROY NULL INVERTER LAYER: EXIT CODE");
 } // end destroy_null_InverterLayer
+*/
 
 static void create_update_bitmap(GBitmap **bmp_image, BitmapLayer *bmp_layer, const int resource_id) {
 	//APP_LOG(APP_LOG_LEVEL_INFO, " CREATE UPDATE BITMAP: ENTER CODE");
@@ -1824,7 +1826,7 @@ static void load_cgmtime() {
 
       // set next poll for data to 5 minutes and 30 seconds after the current data or,
       // if the time to next poll is less than 30 seconds, wait one minute
-      next_tick = current_cgm_time + 60 * 6 + 30; 
+      next_tick = current_cgm_time + 60 * 6 + 30;
       time_till_next_tick = next_tick - cgm_time_now;
       if (time_till_next_tick < 30) {
         time_till_next_tick = 60;
@@ -2201,7 +2203,7 @@ static void load_rig_battlevel() {
 	// CODE START
 
 	// initialize inverter layer to hide
-	layer_set_hidden((Layer *)inv_rig_battlevel_layer, true);
+	//layer_set_hidden((Layer *)inv_rig_battlevel_layer, true);
 
 	//APP_LOG(APP_LOG_LEVEL_DEBUG, "LOAD BATTLEVEL, LAST BATTLEVEL: %s", last_battlevel);
 
@@ -2217,7 +2219,7 @@ static void load_rig_battlevel() {
       // Zero battery level; set here, so if we get zero later we know we have an error instead
       //APP_LOG(APP_LOG_LEVEL_INFO, "LOAD BATTLEVEL, ZERO BATTERY, SET STRING");
       text_layer_set_text(rig_battlevel_layer, "0%");
-      layer_set_hidden((Layer *)inv_rig_battlevel_layer, false);
+      //layer_set_hidden((Layer *)inv_rig_battlevel_layer, false);
       if (LowBatteryAlert == 100) {
 		//APP_LOG(APP_LOG_LEVEL_INFO, "LOAD BATTLEVEL, ZERO BATTERY, VIBRATE");
 		alert_handler_cgm(LOWBATTERY_VIBE);
@@ -2234,7 +2236,7 @@ static void load_rig_battlevel() {
     // got a negative or out of bounds or error battery level
 	  //APP_LOG(APP_LOG_LEVEL_INFO, "LOAD BATTLEVEL, UNKNOWN, ERROR BATTERY");
 	  text_layer_set_text(rig_battlevel_layer, "ERR");
-	  layer_set_hidden((Layer *)inv_rig_battlevel_layer, false);
+	  //layer_set_hidden((Layer *)inv_rig_battlevel_layer, false);
     return;
 	}
 	// initialize formatted battlevel
@@ -2248,7 +2250,7 @@ static void load_rig_battlevel() {
 	text_layer_set_text(rig_battlevel_layer, formatted_battlevel);
 
 	if ( (current_battlevel > 10) && (current_battlevel <= 20) ) {
-    layer_set_hidden((Layer *)inv_rig_battlevel_layer, false);
+    //layer_set_hidden((Layer *)inv_rig_battlevel_layer, false);
     if (LowBatteryAlert == 100) {
 	    //APP_LOG(APP_LOG_LEVEL_INFO, "LOAD BATTLEVEL, LOW BATTERY, 20 OR LESS, VIBRATE");
 	    alert_handler_cgm(LOWBATTERY_VIBE);
@@ -2257,7 +2259,7 @@ static void load_rig_battlevel() {
 	}
 
 	if ( (current_battlevel > 5) && (current_battlevel <= 10) ) {
-    layer_set_hidden((Layer *)inv_rig_battlevel_layer, false);
+    //layer_set_hidden((Layer *)inv_rig_battlevel_layer, false);
     if (LowBatteryAlert == 100) {
 	    //APP_LOG(APP_LOG_LEVEL_INFO, "LOAD BATTLEVEL, LOW BATTERY, 10 OR LESS, VIBRATE");
 	    alert_handler_cgm(LOWBATTERY_VIBE);
@@ -2266,7 +2268,7 @@ static void load_rig_battlevel() {
   }
 
 	if ( (current_battlevel > 0) && (current_battlevel <= 5) ) {
-    layer_set_hidden((Layer *)inv_rig_battlevel_layer, false);
+    //layer_set_hidden((Layer *)inv_rig_battlevel_layer, false);
     if (LowBatteryAlert == 100) {
 	    //APP_LOG(APP_LOG_LEVEL_INFO, "LOAD BATTLEVEL, LOW BATTERY, 5 OR LESS, VIBRATE");
 	    alert_handler_cgm(LOWBATTERY_VIBE);
@@ -2683,8 +2685,9 @@ void window_load_cgm(Window *window_cgm) {
   layer_add_child(window_layer_cgm, text_layer_get_layer(rig_battlevel_layer));
 
   // INVERTER BATTERY LAYER
-  inv_rig_battlevel_layer = inverter_layer_create(GRect(112, 66, 30, 15));
-  layer_add_child(window_get_root_layer(window_cgm), inverter_layer_get_layer(inv_rig_battlevel_layer));
+
+  //inv_rig_battlevel_layer = inverter_layer_create(GRect(112, 66, 30, 15));
+  //layer_add_child(window_get_root_layer(window_cgm), inverter_layer_get_layer(inv_rig_battlevel_layer));
 
   // BG
   bg_layer = text_layer_create(GRect(0, -5, 95, 47));
@@ -2860,8 +2863,9 @@ void window_unload_cgm(Window *window_cgm) {
   destroy_null_TextLayer(&calcraw_last2_layer);
   destroy_null_TextLayer(&calcraw_last3_layer);
 
+
   //APP_LOG(APP_LOG_LEVEL_INFO, "WINDOW UNLOAD, DESTROY INVERTER LAYERS IF EXIST");
-  destroy_null_InverterLayer(&inv_rig_battlevel_layer);
+  //destroy_null_InverterLayer(&inv_rig_battlevel_layer);
 
   // destroy animation
   //destroy_perfectbg_animation(&perfectbg_animation);
@@ -2893,7 +2897,7 @@ static void init_cgm(void) {
   // create the windows
   window_cgm = window_create();
   window_set_background_color(window_cgm, GColorBlack);
-  window_set_fullscreen(window_cgm, true);
+  //window_set_fullscreen(window_cgm, true);
   window_set_window_handlers(window_cgm, (WindowHandlers) {
     .load = window_load_cgm,
     .unload = window_unload_cgm
