@@ -1824,7 +1824,7 @@ static void load_cgmtime() {
 
       // set next poll for data to 5 minutes and 30 seconds after the current data or,
       // if the time to next poll is less than 30 seconds, wait one minute
-      next_tick = current_cgm_time + 60 * 6 + 30;
+      next_tick = current_cgm_time + 60 * 6 + 30; 
       time_till_next_tick = next_tick - cgm_time_now;
       if (time_till_next_tick < 30) {
         time_till_next_tick = 60;
