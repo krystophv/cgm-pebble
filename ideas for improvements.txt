@@ -1,0 +1,9 @@
+Ideas:
+
+have an update_proc function for every layer.
+have the app/phone communication just set some global variables and then mark the appropriate layer dirty.
+have the update_proc functions delegate any alerts/vibration stuff as it pertains to them.
+have the JS cache things locally in localstorage.
+have the watch not just send an empty ping, but instead the timestamp of the last received reading and then
+	have the JS check to see if it's POSSIBLE for there to be a new reading, and send back cached data if
+	there's not been enough time elapased for a new reading to be available

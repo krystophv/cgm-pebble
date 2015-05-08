@@ -1739,11 +1739,6 @@ static void load_cgmtime() {
 
     char cgm_label_buffer[6] = {0};
 
-    time_t current_temp_time = time(NULL);
-    struct tm *current_local_time = localtime(&current_temp_time);
-    size_t draw_cgm_time = 0;
-    static char cgm_time_text[] = "00:00";
-
     // CODE START
 
     // initialize label buffer
@@ -2573,6 +2568,8 @@ void handle_minute_tick_cgm(struct tm* tick_time_cgm, TimeUnits units_changed_cg
     uint32_t current_cgm_timeago = 0;
     int cgm_timeago_diff = 0;
 
+    static char formatted_cgm_timeago[10] = {0};
+    char cgm_label_buffer[6] = {0};
     // CODE START
 
     // initialize label buffer
