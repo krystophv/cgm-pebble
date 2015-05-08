@@ -1666,7 +1666,6 @@ static void load_cgmtime() {
     static uint32_t cgm_time_offset = 0;
     static char formatted_cgm_timeago[10] = {0};
   
-    int cgm_timeago_diff = 0;
     char cgm_label_buffer[6] = {0};	
     
     // CODE START
@@ -2385,6 +2384,8 @@ void handle_minute_tick_cgm(struct tm* tick_time_cgm, TimeUnits units_changed_cg
     uint32_t current_cgm_timeago = 0;
     int cgm_timeago_diff = 0;
 
+    static char formatted_cgm_timeago[10] = {0};
+    char cgm_label_buffer[6] = {0};
     // CODE START
 
     // initialize label buffer
