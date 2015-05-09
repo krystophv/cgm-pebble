@@ -6,6 +6,7 @@
 *.lib
 *.a
 
+#build files
 build/
 .lock-waf_darwin_build
 .lock-waf_linux2_build
@@ -25,3 +26,5 @@ InteliJ
 .idea/
 *.iml
 gh-pages/
+.tags
+.tags_sorted_by_file
