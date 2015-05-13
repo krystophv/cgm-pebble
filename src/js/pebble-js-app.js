@@ -315,7 +315,7 @@ function fetchCgmData() {
 						icon: currentIcon,
 						bg: currentBG,
 						tcgm: formatReadTime,
-						tapp: formatAppTime,
+						//tapp: formatAppTime,
 						dlta: formatBGDelta,
 						ubat: currentBattery,
 						name: NameofT1DPerson,
