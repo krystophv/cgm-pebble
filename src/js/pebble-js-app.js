@@ -1,3 +1,6 @@
+
+var lastMessage = {};
+var lastSentData = {};
 // main function to retrieve, format, and send cgm data
 function fetchCgmData() {
 
@@ -305,6 +308,8 @@ function fetchCgmData() {
 					//console.log("current Formatted Delta: " + formatBGDelta);
 					//console.log("current Battery: " + currentBattery);
 
+
+					var to_send = {};
 					// load message data
 					message = {
 						icon: currentIcon,
@@ -320,9 +325,46 @@ function fetchCgmData() {
 						noiz: currentNoise
 					};
 
+					// only send new data
+					if(currentIcon !== lastSentData.icon){
+						to_send.icon = lastSentData.icon = currentIcon;
+					}
+					if(currentBG !== lastSentData.bg){
+						to_send.bg = lastSentData.bg = currentBG;
+					}
+					if(formatReadTime !== lastSentData.tcgm){
+						to_send.tcgm = lastSentData.tcgm = formatReadTime;
+					}
+					if(formatAppTime !== lastSentData.tapp){
+						to_send.tapp = lastSentData.tapp = formatAppTime;
+					}
+					if(formatBGDelta !== lastSentData.dlta){
+						to_send.dlta = lastSentData.dlta = formatBGDelta;
+					}
+					if(currentBattery !== lastSentData.ubat){
+						to_send.ubat = lastSentData.ubat = currentBattery;
+					}
+					if(NameofT1DPerson !== lastSentData.name){
+						to_send.name = lastSentData.name = NameofT1DPerson;
+					}
+					if(values !== lastSentData.vals){
+						to_send.vals = lastSentData.vals = values;
+					}
+					if(formatCalcRaw !== lastSentData.clrw){
+						to_send.clrw = lastSentData.clrw = formatCalcRaw;
+					}
+					if(formatRawUnfilt !== lastSentData.rwuf){
+						to_send.rwuf = lastSentData.rwuf = formatRawUnfilt;
+					}
+					if(currentNoise !== lastSentData.noiz){
+						to_send.noiz = lastSentData.noiz = currentNoise;
+					}
+
+					lastMessage = to_send;
+
 					// send message data to log and to watch
-					console.log("JS send message: " + JSON.stringify(message));
-					MessageQueue.sendAppMessage(message);
+					console.log("JS send message: " + JSON.stringify(to_send));
+					MessageQueue.sendAppMessage(to_send);
 
 					// response data is not good; format error message and send to watch
 					// have to send space in BG field for logo to show up on screen
