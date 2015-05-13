@@ -1,3 +1,6 @@
+
+var lastMessage = {};
+var lastSentData = {};
 // main function to retrieve, format, and send cgm data
 function fetchCgmData() {
 
@@ -189,7 +192,7 @@ function fetchCgmData() {
 					// assign bg delta string
 					formatBGDelta = ((currentBGDelta > 0 ? '+' : '') + currentBGDelta);
 
-					//console.log("Current Unfiltered: " + currentRawUnfilt);                  
+					//console.log("Current Unfiltered: " + currentRawUnfilt);
 					//console.log("Current Intercept: " + currentIntercept);
 					//console.log("Special Value Flag: " + specialValue);
 					//console.log("Current BG: " + currentBG);
@@ -207,7 +210,7 @@ function fetchCgmData() {
 							//console.log("Current Ratio: " + currentRatio);
 							//console.log("Normal BG Calculated Raw: " + currentCalcRaw);
 						}
-					} // if currentIntercept                  
+					} // if currentIntercept
 
 					// assign raw sensor values if they exist
 					if ((typeof currentRawUnfilt != "undefined") && (currentRawUnfilt !== null)) {
@@ -257,7 +260,7 @@ function fetchCgmData() {
 							}
 							//console.log("Format Unfiltered: " + formatRawUnfilt);
 						}
-					} // if currentRawUnfilt 
+					} // if currentRawUnfilt
 
 					//console.log("Calculated Raw To Be Sent: " + formatCalcRaw);
 
@@ -272,22 +275,22 @@ function fetchCgmData() {
 						values = "1"; //mmol selected
 					}
 					values += "," + opts.lowbg; //Low BG Level
-					values += "," + opts.highbg; //High BG Level                      
-					values += "," + opts.lowsnooze; //LowSnooze minutes 
+					values += "," + opts.highbg; //High BG Level
+					values += "," + opts.lowsnooze; //LowSnooze minutes
 					values += "," + opts.highsnooze; //HighSnooze minutes
-					values += "," + opts.lowvibe; //Low Vibration 
+					values += "," + opts.lowvibe; //Low Vibration
 					values += "," + opts.highvibe; //High Vibration
 					values += "," + opts.vibepattern; //Vibration Pattern
 					if (opts.timeformat == "12") {
-						values += ",0"; //Time Format 12 Hour  
+						values += ",0"; //Time Format 12 Hour
 					} else {
-						values += ",1"; //Time Format 24 Hour  
+						values += ",1"; //Time Format 24 Hour
 					}
 					// Vibrate on raw value in special value; Yes = 1; No = 0;
 					if ((currentCalcRaw !== 0) && (opts.rawvibrate == "1")) {
-						values += ",1"; // Vibrate on raw value when in special values  
+						values += ",1"; // Vibrate on raw value when in special values
 					} else {
-						values += ",0"; // Do not vibrate on raw value when in special values                        
+						values += ",0"; // Do not vibrate on raw value when in special values
 					}
 
 					//console.log("Current Value: " + values);
@@ -302,10 +305,11 @@ function fetchCgmData() {
 					//console.log("now: " + formatAppTime);
 					//console.log("readingtime: " + formatReadTime);
 					//console.log("current BG delta: " + currentBGDelta);
-					//console.log("current Formatted Delta: " + formatBGDelta);              
+					//console.log("current Formatted Delta: " + formatBGDelta);
 					//console.log("current Battery: " + currentBattery);
 
-					// load message data  
+					var to_send = {};
+					// load message data
 					message = {
 						icon: currentIcon,
 						bg: currentBG,
@@ -320,12 +324,49 @@ function fetchCgmData() {
 						noiz: currentNoise
 					};
 
+					// only send new data
+					if(currentIcon !== lastSentData.icon){
+						to_send.icon = lastSentData.icon = currentIcon;
+					}
+					if(currentBG !== lastSentData.bg){
+						to_send.bg = lastSentData.bg = currentBG;
+					}
+					if(formatReadTime !== lastSentData.tcgm){
+						to_send.tcgm = lastSentData.tcgm = formatReadTime;
+					}
+					if(formatAppTime !== lastSentData.tapp){
+						to_send.tapp = lastSentData.tapp = formatAppTime;
+					}
+					if(formatBGDelta !== lastSentData.dlta){
+						to_send.dlta = lastSentData.dlta = formatBGDelta;
+					}
+					if(currentBattery !== lastSentData.ubat){
+						to_send.ubat = lastSentData.ubat = currentBattery;
+					}
+					if(NameofT1DPerson !== lastSentData.name){
+						to_send.name = lastSentData.name = NameofT1DPerson;
+					}
+					if(values !== lastSentData.vals){
+						to_send.vals = lastSentData.vals = values;
+					}
+					if(formatCalcRaw !== lastSentData.clrw){
+						to_send.clrw = lastSentData.clrw = formatCalcRaw;
+					}
+					if(formatRawUnfilt !== lastSentData.rwuf){
+						to_send.rwuf = lastSentData.rwuf = formatRawUnfilt;
+					}
+					if(currentNoise !== lastSentData.noiz){
+						to_send.noiz = lastSentData.noiz = currentNoise;
+					}
+
+					lastMessage = to_send;
+
 					// send message data to log and to watch
-					console.log("JS send message: " + JSON.stringify(message));
-					MessageQueue.sendAppMessage(message);
+					console.log("JS send message: " + JSON.stringify(to_send));
+					MessageQueue.sendAppMessage(to_send);
 
 					// response data is not good; format error message and send to watch
-					// have to send space in BG field for logo to show up on screen       
+					// have to send space in BG field for logo to show up on screen
 				} else {
 
 					// " " (space) shows these are init values (even though it's an error), not bad or null values
@@ -347,7 +388,7 @@ function fetchCgmData() {
 		};
 		console.log("DATA OFFLINE JS message", JSON.stringify(message));
 		MessageQueue.sendAppMessage(message);
-	}, 59000); // timeout in ms; set at 45 seconds; can not go beyond 59 seconds      
+	}, 59000); // timeout in ms; set at 45 seconds; can not go beyond 59 seconds
 } // end fetchCgmData
 
 // message queue-ing to pace calls from C function on watch
