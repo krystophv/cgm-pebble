@@ -83,9 +83,9 @@ function fetchCgmData() {
 						formatReadTime = Math.floor((readingTime / 1000) - (timezoneOffset * 60)),
 
 						// get app time and format
-						appTime = new Date().getTime(),
+						//appTime = new Date().getTime(),
 						//appTime = null,
-						formatAppTime = Math.floor((appTime / 1000) - (timezoneOffset * 60)),
+						//formatAppTime = Math.floor((appTime / 1000) - (timezoneOffset * 60)),
 
 						// get BG delta and format
 						currentBGDelta = responsebgs[0].bgdelta,
@@ -334,9 +334,9 @@ function fetchCgmData() {
 					if(formatReadTime !== lastSentData.tcgm){
 						to_send.tcgm = lastSentData.tcgm = formatReadTime;
 					}
-					if(formatAppTime !== lastSentData.tapp){
-						to_send.tapp = lastSentData.tapp = formatAppTime;
-					}
+					//if(formatAppTime !== lastSentData.tapp){
+					//	to_send.tapp = lastSentData.tapp = formatAppTime;
+					//}
 					if(formatBGDelta !== lastSentData.dlta){
 						to_send.dlta = lastSentData.dlta = formatBGDelta;
 					}
