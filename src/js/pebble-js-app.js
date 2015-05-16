@@ -54,6 +54,7 @@ function fetchCgmData() {
 				clearTimeout(myCGMTimeout);
 
 				response = JSON.parse(req.responseText);
+				//console.log("res: " + JSON.stringify(response));
 				responsebgs = response.bgs;
 				responsecals = response.cals;
 
@@ -261,7 +262,7 @@ function fetchCgmData() {
 							//console.log("Format Unfiltered: " + formatRawUnfilt);
 						}
 					} // if currentRawUnfilt
-
+					//console.log("currentCalcRaw: " + currentCalcRaw);
 					//console.log("Calculated Raw To Be Sent: " + formatCalcRaw);
 
 					// assign blank noise if it doesn't exist
