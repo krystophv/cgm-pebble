@@ -360,6 +360,7 @@ static char t1name[15] = {0};
 static uint32_t current_cgm_time = 0;
 static uint32_t stored_cgm_time = 0;
 static uint32_t current_cgm_timeago = 0;
+static time_t next_fetch_time = 0;
 
 static uint32_t current_app_time = 0;
 static char current_bg_delta[10] = {0};
@@ -696,6 +697,10 @@ static void minute_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
     // update the cgmtime here
     process_cgmtime();
+
+    if(next_fetch_time <= mktime(tick_time)){
+      fetch_timer_callback(NULL);
+    }
 }
 
 /**
@@ -737,6 +742,35 @@ static void draw_date_from_app() {
 static void setSpecialAlert(bool new_val) {
     s_specialvalue_alert = new_val;
     process_icon();
+}
+
+/**
+ * When the cgmtime changes, we set the next fetch for when it might be available
+ */
+static void set_next_fetch() {
+    int next_tick = 0;
+    int time_till_next_tick = 0;
+    time_t cgm_time_now = 0;
+
+    cgm_time_now = time(NULL);
+    // set next poll for data to 6 minutes and 30 seconds after the current data or,
+    // if the time to next poll is less than 30 seconds, wait one minute
+    next_tick = current_cgm_time + 60 * 6 + 30;
+    time_till_next_tick = next_tick - cgm_time_now;
+    if (time_till_next_tick < 30) {
+        time_till_next_tick = 60;
+    }
+
+    next_fetch_time = (time_t) cgm_time_now + time_till_next_tick;
+
+    // if timer already exists, just reschedule it
+    /*
+    if (fetch_timer != NULL) {
+        app_timer_reschedule(fetch_timer, time_till_next_tick * MS_IN_A_SECOND);
+    } else {
+        fetch_timer = app_timer_register((time_till_next_tick * MS_IN_A_SECOND), fetch_timer_callback, NULL);
+    }
+    */
 }
 
 // ANIMATION CODE
@@ -912,7 +946,7 @@ static void bg_vibrator (uint16_t BG_BOTTOM_INDX, uint16_t BG_TOP_INDX, uint8_t 
     //APP_LOG(APP_LOG_LEVEL_INFO, "BG VIBRATOR, CHECK TO SEE IF WE NEED TO VIBRATE");
     if ( ( ((conv_vibrator_bg > BG_BOTTOM_INDX) && (conv_vibrator_bg <= BG_TOP_INDX))
             && ((last_alert_time == 0) || (last_alert_time > BG_SNOOZE)) )
-            || ( ((conv_vibrator_bg > BG_BOTTOM_INDX) && (conv_vibrator_bg <= BG_TOP_INDX)) && (*bg_overwrite == 100) ) ) {
+            || ( ((conv_vibrator_bg > BG_BOTTOM_INDX) && (conv_vibrator_bg <= BG_TOP_INDX)) && (*bg_overwrite == false) ) ) {
 
         //APP_LOG(APP_LOG_LEVEL_DEBUG, "last_alert_time SNOOZE VALUE IN: %i", last_alert_time);
         //APP_LOG(APP_LOG_LEVEL_DEBUG, "bg_overwrite IN: %i", *bg_overwrite);
@@ -932,13 +966,13 @@ static void bg_vibrator (uint16_t BG_BOTTOM_INDX, uint16_t BG_TOP_INDX, uint8_t 
         // if hit snooze, reset snooze counter; will alert next time around
         if (last_alert_time > BG_SNOOZE) {
             last_alert_time = 0;
-            specvalue_overwrite = 100;
-            hypolow_overwrite = 100;
-            biglow_overwrite = 100;
-            midlow_overwrite = 100;
-            low_overwrite = 100;
-            midhigh_overwrite = 100;
-            bighigh_overwrite = 100;
+            specvalue_overwrite = false;
+            hypolow_overwrite = false;
+            biglow_overwrite = false;
+            midlow_overwrite = false;
+            low_overwrite = false;
+            midhigh_overwrite = false;
+            bighigh_overwrite = false;
             //APP_LOG(APP_LOG_LEVEL_INFO, "BG VIBRATOR, OVERWRITE RESET");
         }
 
@@ -1226,31 +1260,6 @@ static void process_icon() {
     if (current_icon_resource != new_icon_resource) {
         set_container_image(&s_icon_bitmap, s_icon_layer, new_icon_resource);
         current_icon_resource = new_icon_resource;
-    }
-}
-
-/**
- * When the cgmtime changes, we set the next fetch for when it might be available
- */
-static void set_next_fetch() {
-    int next_tick = 0;
-    int time_till_next_tick = 0;
-    static time_t cgm_time_now = 0;
-
-    cgm_time_now = time(NULL);
-    // set next poll for data to 6 minutes and 30 seconds after the current data or,
-    // if the time to next poll is less than 30 seconds, wait one minute
-    next_tick = current_cgm_time + 60 * 6 + 30;
-    time_till_next_tick = next_tick - cgm_time_now;
-    if (time_till_next_tick < 30) {
-        time_till_next_tick = 60;
-    }
-
-    // if timer already exists, just reschedule it
-    if (fetch_timer != NULL) {
-        app_timer_reschedule(fetch_timer, time_till_next_tick * MS_IN_A_SECOND);
-    } else {
-        fetch_timer = app_timer_register((time_till_next_tick * MS_IN_A_SECOND), fetch_timer_callback, NULL);
     }
 }
 
@@ -1978,8 +1987,8 @@ static void sync_error_handler(DictionaryResult appsync_dict_error, AppMessageRe
     // reset appsync retries counter
     appsyncandmsg_retries_counter = 0;
 
-    // erase cgm and app ago times
-    text_layer_set_text(s_cgmtime_layer, "");
+    // erase cgm and app ago times (WHY? they're not invalid.)
+    //text_layer_set_text(s_cgmtime_layer, "");
 
     // erase cgm icon
     //create_update_bitmap(&cgmicon_bitmap, cgmicon_layer, TIMEAGO_ICONS[RCVRNONE_ICON_INDX]);
@@ -2025,7 +2034,8 @@ static void fetch_timer_callback(void *data) {
     send_cmd_cgm();
 
     //APP_LOG(APP_LOG_LEVEL_INFO, "TIMER CALLBACK, SEND CMD DONE, ABOUT TO REGISTER TIMER");
-    fetch_timer = app_timer_register((WATCH_MSGSEND_SECS * MS_IN_A_SECOND), fetch_timer_callback, NULL);
+    //fetch_timer = app_timer_register((WATCH_MSGSEND_SECS * MS_IN_A_SECOND), fetch_timer_callback, NULL);
+    next_fetch_time = time(NULL) + WATCH_MSGSEND_SECS;
 
     //APP_LOG(APP_LOG_LEVEL_INFO, "TIMER CALLBACK, REGISTER TIMER DONE");
 }
@@ -2100,8 +2110,6 @@ static void main_window_load(Window *window) {
     text_layer_set_font(s_rig_battlevel_layer, s_res_gothic_18_bold);
     text_layer_set_text_alignment(s_rig_battlevel_layer, GTextAlignmentRight);
     layer_add_child(window_layer, text_layer_get_layer(s_rig_battlevel_layer));
-
-
 
     // BG
     s_bg_layer = text_layer_create(GRect(0, -5, 95, 47));
